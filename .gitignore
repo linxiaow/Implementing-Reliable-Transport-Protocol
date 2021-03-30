@@ -1,4 +1,6 @@
-tools/*
-Skeleton/*
+tools/
+Skeleton/
 .DS_Store
 .idea/
+__pycache__/
+

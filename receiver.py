@@ -38,14 +38,17 @@ class Receiver:
             sys.exit()
         print("Server socket created and bind to host {} and port {}!".format(self.host, self.port))
 
-        while True:
-            data, addr = self.socket.recvfrom(1024)
-            print("server side: ", data)
-            reply_message = "Server echo: " + data.decode()
-            self.socket.sendto(reply_message.encode(), addr)
-            print("Server Message sent,  ", reply_message)
-        # raise NotImplementedError
-        self.socket.close()
+        try:
+            while True:
+                print("---------------------------------------------------")
+                data, addr = self.socket.recvfrom(1024)
+                reply_message = data.decode('utf-8', 'ignore')
+                self.socket.sendto(reply_message.encode(), addr)
+                print("Server Message sent,  ", reply_message)
+            # raise NotImplementedError
+        except KeyboardInterrupt:
+            self.socket.close()
+            sys.exit()
 
     # Create your outbound packet to send to sender_skeleton.py
     # Refer to this:

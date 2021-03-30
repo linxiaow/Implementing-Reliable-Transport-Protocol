@@ -2,6 +2,9 @@ import json
 from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
 import argparse
 import sys
+from utils import MAX_PAYLOAD
+from utils import checksum, not_corrupted
+
 
 class Sender:
     # TODO: Place States
@@ -20,7 +23,8 @@ class Sender:
         self.dest_host = args.dest_host
         self.dest_port = args.dest_port
         self.socket = None
-        # raise NotImplementedError
+        self.timeout = args.timeout
+        self.ack = 0  # begin with 0
 
     # Run a while loop that will change status depending on FIN, etc.
     def start(self):
@@ -29,19 +33,37 @@ class Sender:
         except socket_error:
             print('Failed to create client socket')
             sys.exit()
-        while True:
-            msg = input('Enter message to send : ')
-            try:
-                # Set the whole string
-                self.socket.sendto(msg.encode(), (self.dest_host, self.dest_port))
+        try:
+            inf = sys.stdin
+            while True:
+                # msg = input('Enter message to send : ')
+                current_payload = inf.read(MAX_PAYLOAD)
 
-                # receive data from client (data, addr)
-                reply, addr = self.socket.recvfrom(1024)
-                print('Server reply : ' + reply.decode())
+                # loop until you everything is read
+                while len(current_payload) > 0:
 
-            except socket_error as msg:
-                print('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
-                sys.exit()
+                    # FIN
+                    if len(current_payload) < MAX_PAYLOAD:
+                        print("!!!!!!FIN")
+
+                    # else:
+
+                    try:
+                        # Set the whole string
+                        self.socket.sendto(current_payload.encode(), (self.dest_host, self.dest_port))
+
+                        # receive data from client (data, addr)
+                        reply, addr = self.socket.recvfrom(1024)
+                        # print('Server reply : ' + reply.decode())
+
+                    except socket_error as msg:
+                        print('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+                        sys.exit()
+                    current_payload = inf.read(MAX_PAYLOAD)
+        except KeyboardInterrupt:
+            self.socket.close()
+            sys.exit()
+
         # raise NotImplementedError
 
     # Read inbound packet from udpl that is connected to receiver
@@ -63,7 +85,18 @@ class Sender:
 
     # Call this function to create packet
     def make_packet(self, line, is_fin=False):
-        raise NotImplementedError
+        # transfer in json format
+        packet = {
+            "FIN": int(is_fin),
+            "ACK": 1,
+            "acknowledge_number": self.ack,
+            "data": line,
+            "internet_checksum": self.get_checksum(line)
+        }
+
+        packet = json.dumps(packet)
+        return packet
+        # raise NotImplementedError
 
     # send the packet to receive.py
     def send_outbound(self):
@@ -71,7 +104,8 @@ class Sender:
 
     # TODO: Create the checksum of your UDP packet
     def get_checksum(self, packet):
-        raise NotImplementedError
+        internet_checksum = checksum(packet)
+        return internet_checksum
 
 
 # Main method to read command line arguments
@@ -95,7 +129,6 @@ def main():
                         help='set timeout for sender client socket', type=int)
     args = parser.parse_args()
 
-    print(args)
     # Create sender object and send data
     sender = Sender(args)
     sender.start()
