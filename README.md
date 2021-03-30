@@ -1,5 +1,10 @@
 # Write RDT 3.0 using ABP protocol
-# How to Run
+# Enviroment
+- I am using an MacOS Catelina
+- The terminal I am using is zsh
+- The IDE I am using is Pycharm
+
+# How to Run in localhost
 - Run the proxy server for both sender and receiver using [NEWUDPL](http://www.cs.columbia.edu/~hgs/research/projects/newudpl/newudpl-1.4/newudpl.html)
 - Run receiver.py and then sender.py
 
@@ -57,7 +62,7 @@ connect to outbound of receiver
 
 connect to outbound of sender
 ```shell script
-./newudpl -vv -p 5002 -i "localhost/*" -o localhost:5000 -O 99
+./newudpl -vv -p 5002 -i "localhost/*" -o localhost:5000 -O 80
 ```
 
 Now the sender argument is
