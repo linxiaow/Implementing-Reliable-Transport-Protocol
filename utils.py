@@ -39,6 +39,8 @@ def not_corrupted(payload, is_from_sender):
         json_data = json.loads(payload)
         if is_from_sender:
             data = json_data["data"]
+            index = json_data["index"]
+            FIN = json_data["FIN"]
         else:
             # receiver use ack_number instead of data
             data = json_data["acknowledgement_number"]

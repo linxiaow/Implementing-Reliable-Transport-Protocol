@@ -24,6 +24,7 @@ class Receiver:
         self.dest_port = args.dest_port
         self.socket = None
         self.ack = 0
+        self.recv_seq = 0
         self.FIN = 0  # check if the end of the packet
         # raise NotImplementedError
 
@@ -44,16 +45,22 @@ class Receiver:
 
         try:
             while True:
-                while True:
-                    is_received = self.inbound()
-                    if is_received:
-                        break
+                # while True:
+                #     is_received = self.inbound()
+                #     if is_received:
+                #         break
+                #
+                # while True:
+                #     is_sent = self.outbound(self.make_packet())
+                #     if is_sent:
+                #         self.ack = 1 - self.ack  # alternating bit
+                #         break
 
-                while True:
-                    is_sent = self.outbound(self.make_packet())
-                    if is_sent:
-                        self.ack = 1 - self.ack  # alternating bit
-                        break
+                # for receiver, it will send packets no matter in what situation
+                no_error = self.inbound()  # data will be delivered if no pronblem
+                self.outbound(self.make_packet())
+                if no_error:
+                    self.ack = 1 - self.ack  # alternating bit
 
                 if self.FIN == 1:
                     print("*** FIN received, closing the server......")
@@ -80,20 +87,33 @@ class Receiver:
     # Refer to this:
     # https://www.binarytides.com/programming-udp-sockets-in-python/
     def inbound(self):
-        print("---------------------------------------------------")
-        data, addr = self.socket.recvfrom(2048)
-        data_json = json.loads(data)
-        print(data_json["data"])
-        if data_json["FIN"] == 1:
-            self.FIN = 1
-        return True
+        print("-------Received packets from sender-----------")
+        payload, addr = self.socket.recvfrom(2048)
+        if not_corrupted(payload, is_from_sender=True):
+            load_json = json.loads(payload)  # guarantee to be decodable
+            seq = load_json["sequence_number"]
+            self.recv_seq = seq  # record the received data
+            index = load_json["index"]
+            print("[INFO]: Packet index at", index)
+            if seq == self.ack:
+                print(load_json["data"])  # deliver data
+                if load_json["FIN"] == 1:
+                    self.FIN = 1
+                return True
+            else:
+                print("*** seq not equal to ack in server! ***")
+                return False
+        else:
+            print("*** data corrupted! ***")
+            return False
         # raise NotImplementedError
 
     def make_packet(self):
         # sometimes data can be ""
+        recv_seq = self.recv_seq
         packet = {
-            "acknowledgement_number": self.ack,
-            "internet_checksum": self.get_checksum(self.ack)
+            "acknowledgement_number": recv_seq,
+            "internet_checksum": self.get_checksum(recv_seq)
         }
         packet = json.dumps(packet)
         return packet

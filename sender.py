@@ -41,6 +41,7 @@ class Sender:
             sys.exit()
         try:
             inf = sys.stdin
+            debug_index = 0
             current_payload = inf.read(MAX_PAYLOAD)
 
             # loop until you everything is read
@@ -51,9 +52,10 @@ class Sender:
                 if len(current_payload) < MAX_PAYLOAD:
                     is_fin = True
                 # else:
-                self.buffer.append(self.make_packet(current_payload, self.seq, is_fin))
+                self.buffer.append(self.make_packet(current_payload, self.seq, is_fin=is_fin, index=debug_index))
                 current_payload = inf.read(MAX_PAYLOAD)
                 self.seq = 1 - self.seq
+                debug_index += 1
 
             self.seq = 0
             index = 0
@@ -122,13 +124,15 @@ class Sender:
         raise NotImplementedError
 
     # Call this function to create packet
-    def make_packet(self, data, seq, is_fin=False):
+    def make_packet(self, data, seq, is_fin=False, index=0):
+        # index is only for debugging usage to see the order of packet
         # transfer in json format
         packet = {
             "FIN": int(is_fin),
             "sequence_number": seq,
             "data": data,
-            "internet_checksum": self.get_checksum(data)
+            "internet_checksum": self.get_checksum(data),
+            "index": index
         }
 
         packet = json.dumps(packet)
