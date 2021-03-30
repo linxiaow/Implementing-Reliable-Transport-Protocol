@@ -1,5 +1,5 @@
 import json
-from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
+from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error, timeout
 import argparse
 import sys
 from utils import MAX_PAYLOAD
@@ -24,7 +24,7 @@ class Sender:
         self.dest_port = args.dest_port
         self.socket = None
         self.timeout = args.timeout
-        self.ack = 0  # begin with 0
+        self.seq = 0  # begin with 0
         self.buffer = []
 
     # Run a while loop that will change status depending on FIN, etc.
@@ -33,6 +33,11 @@ class Sender:
             self.socket = socket(AF_INET, SOCK_DGRAM)
         except socket_error:
             print('Failed to create client socket')
+            sys.exit()
+        try:
+            self.socket.bind((self.host, self.port))
+        except socket_error as msg:
+            print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
             sys.exit()
         try:
             inf = sys.stdin
@@ -44,25 +49,34 @@ class Sender:
                 # FIN
                 is_fin = False
                 if len(current_payload) < MAX_PAYLOAD:
-                    print("!!!!!!FIN")
                     is_fin = True
                 # else:
-                self.buffer.append(self.make_packet(current_payload, self.ack, is_fin))
+                self.buffer.append(self.make_packet(current_payload, self.seq, is_fin))
                 current_payload = inf.read(MAX_PAYLOAD)
-                self.ack = 1 - self.ack
+                self.seq = 1 - self.seq
 
-            self.ack = 0
+            self.seq = 0
             index = 0
             while index < len(self.buffer):
                 try:
-                    # Set the whole string
-                    self.socket.sendto(self.buffer[index].encode(),
-                                       (self.dest_host, self.dest_port))
+                    while True:
+                        print("[INFO]: Transmitting No.{} packet...".format(index))
+                        is_send = self.outbound(self.buffer[index])
+                        if is_send:
+                            break
+                    self.socket.settimeout(self.timeout)
 
                     # receive data from client (data, addr)
-                    reply, addr = self.socket.recvfrom(1024)
+                    while True:
+                        is_received = self.inbound()
+                        if is_received:
+                            self.seq = 1 - self.seq  # alternating bit
+                            break
                     # print('Server reply : ' + reply.decode())
-
+                except timeout:
+                    print("Timeout occurs! retransmit......")
+                    self.socket.settimeout(None)
+                    continue
                 except socket_error as msg:
                     print('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
                     sys.exit()
@@ -75,12 +89,29 @@ class Sender:
 
     # Read inbound packet from udpl that is connected to receiver
     def inbound(self):
-        raise NotImplementedError
+        payload, addr = self.socket.recvfrom(2048)
+        print("sender received ACK!")
+        if not_corrupted(payload, is_from_sender=False):
+            load_json = json.loads(payload)  # guarantee to be decodable
+            ack = load_json["acknowledgement_number"]
+            if ack == self.seq:
+                return True
+            else:
+                print("*** ack not equal to seq! ***")
+                return False
+        else:
+            print("*** data corrupted! ***")
+            return False
+        # raise NotImplementedError
 
     # setup output state
     # read input from stdin for payload data
-    def outbound(self):
-        raise NotImplementedError
+    def outbound(self, pkt):
+        sndpket = pkt
+        self.socket.sendto(sndpket.encode(),
+                           (self.dest_host, self.dest_port))
+        return True
+        # raise NotImplementedError
 
     # Call this function when it is time to send a FIN to receive.py
     def end(self):
@@ -101,8 +132,6 @@ class Sender:
         }
 
         packet = json.dumps(packet)
-        print("~~~~~~~~~~~")
-        print(packet)
         return packet
         # raise NotImplementedError
 

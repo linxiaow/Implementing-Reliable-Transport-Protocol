@@ -2,6 +2,8 @@ import json
 from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
 import argparse
 import sys
+from utils import MAX_PAYLOAD
+from utils import checksum, not_corrupted
 
 
 class Receiver:
@@ -21,6 +23,8 @@ class Receiver:
         self.dest_host = args.dest_host
         self.dest_port = args.dest_port
         self.socket = None
+        self.ack = 0
+        self.FIN = 0  # check if the end of the packet
         # raise NotImplementedError
 
     # Run a while loop that will change status depending on FIN flag
@@ -40,12 +44,20 @@ class Receiver:
 
         try:
             while True:
-                print("---------------------------------------------------")
-                data, addr = self.socket.recvfrom(2048)
-                reply_data = json.loads(data.decode('utf-8', 'ignore'))
+                while True:
+                    is_received = self.inbound()
+                    if is_received:
+                        break
 
-                self.socket.sendto(reply_data["data"].encode(), addr)
-                print("**Server Message sent**:", reply_data)
+                while True:
+                    is_sent = self.outbound(self.make_packet())
+                    if is_sent:
+                        self.ack = 1 - self.ack  # alternating bit
+                        break
+
+                if self.FIN == 1:
+                    print("*** FIN received, closing the server......")
+                    raise KeyboardInterrupt
             # raise NotImplementedError
         except KeyboardInterrupt:
             self.socket.close()
@@ -54,8 +66,11 @@ class Receiver:
     # Create your outbound packet to send to sender_skeleton.py
     # Refer to this:
     # https://www.binarytides.com/programming-udp-sockets-in-python/
-    def outbound(self, acknum):
-        raise NotImplementedError
+    def outbound(self, pkt):
+        sndpket = pkt
+        self.socket.sendto(sndpket.encode(),
+                           (self.dest_host, self.dest_port))
+        return True
 
     # TODO: This method is called when receive.py gets a packet from sender_skeleton.py
     # Check for the following
@@ -65,11 +80,28 @@ class Receiver:
     # Refer to this:
     # https://www.binarytides.com/programming-udp-sockets-in-python/
     def inbound(self):
-        raise NotImplementedError
+        print("---------------------------------------------------")
+        data, addr = self.socket.recvfrom(2048)
+        data_json = json.loads(data)
+        print(data_json["data"])
+        if data_json["FIN"] == 1:
+            self.FIN = 1
+        return True
+        # raise NotImplementedError
+
+    def make_packet(self):
+        # sometimes data can be ""
+        packet = {
+            "acknowledgement_number": self.ack,
+            "internet_checksum": self.get_checksum(self.ack)
+        }
+        packet = json.dumps(packet)
+        return packet
 
     # TODO: Create the checksum of your UDP packet
     def get_checksum(self, packet):
-        raise NotImplementedError
+        internet_checksum = checksum(packet)
+        return internet_checksum
 
 
 # Main method to read command line arguments
