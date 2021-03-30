@@ -1,17 +1,31 @@
+# Write RDT 3.0 using ABP protocol
+# How to Run
+- Run the proxy server for both sender and receiver using [NEWUDPL](http://www.cs.columbia.edu/~hgs/research/projects/newudpl/newudpl-1.4/newudpl.html)
+- Run receiver.py and then sender.py
 
+# Course Website Instructions
+![1](images/1.png)
+![2](images/2.png)
+![3](images/3.png)
 # Some useful commands
-## Receiver command
+
+## Direct connection
+First, we can begin with direct connection (without using the proxy server NEWUDPL)
+### Receiver command
 ```sh
 python3 receiver.py --host localhost --port 5000 --dest_host localhost --dest_port 5001
 ```
 
-## Sender command
+
+### Sender command
 This is to directly connect to the receiver, not using the newudpl
 ```sh
 python3 sender.py --host localhost --port 5001 --dest_host localhost --dest_port 5000 --timeout 2 < sample.txt
 ```
 
-## Using NEWUDPL
+## Using NEWUDPL as a proxy server
+Now, we use NEWUDPL in the middle
+
 http://www.cs.columbia.edu/~hgs/research/projects/newudpl/newudpl-1.4/newudpl.html
 
 notice that
