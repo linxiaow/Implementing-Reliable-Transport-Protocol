@@ -3,7 +3,7 @@ utility functions
 '''
 
 # constants
-MAX_PAYLOAD = 1023
+MAX_PAYLOAD = 1024
 
 # Helper functions
 def checksum(data):

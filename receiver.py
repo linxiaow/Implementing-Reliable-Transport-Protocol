@@ -41,10 +41,11 @@ class Receiver:
         try:
             while True:
                 print("---------------------------------------------------")
-                data, addr = self.socket.recvfrom(1024)
-                reply_message = data.decode('utf-8', 'ignore')
-                self.socket.sendto(reply_message.encode(), addr)
-                print("Server Message sent,  ", reply_message)
+                data, addr = self.socket.recvfrom(2048)
+                reply_data = json.loads(data.decode('utf-8', 'ignore'))
+
+                self.socket.sendto(reply_data["data"].encode(), addr)
+                print("**Server Message sent**:", reply_data)
             # raise NotImplementedError
         except KeyboardInterrupt:
             self.socket.close()

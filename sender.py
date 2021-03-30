@@ -25,6 +25,7 @@ class Sender:
         self.socket = None
         self.timeout = args.timeout
         self.ack = 0  # begin with 0
+        self.buffer = []
 
     # Run a while loop that will change status depending on FIN, etc.
     def start(self):
@@ -35,31 +36,37 @@ class Sender:
             sys.exit()
         try:
             inf = sys.stdin
-            while True:
-                # msg = input('Enter message to send : ')
+            current_payload = inf.read(MAX_PAYLOAD)
+
+            # loop until you everything is read
+            while len(current_payload) > 0:
+
+                # FIN
+                is_fin = False
+                if len(current_payload) < MAX_PAYLOAD:
+                    print("!!!!!!FIN")
+                    is_fin = True
+                # else:
+                self.buffer.append(self.make_packet(current_payload, self.ack, is_fin))
                 current_payload = inf.read(MAX_PAYLOAD)
+                self.ack = 1 - self.ack
 
-                # loop until you everything is read
-                while len(current_payload) > 0:
+            self.ack = 0
+            index = 0
+            while index < len(self.buffer):
+                try:
+                    # Set the whole string
+                    self.socket.sendto(self.buffer[index].encode(),
+                                       (self.dest_host, self.dest_port))
 
-                    # FIN
-                    if len(current_payload) < MAX_PAYLOAD:
-                        print("!!!!!!FIN")
+                    # receive data from client (data, addr)
+                    reply, addr = self.socket.recvfrom(1024)
+                    # print('Server reply : ' + reply.decode())
 
-                    # else:
-
-                    try:
-                        # Set the whole string
-                        self.socket.sendto(current_payload.encode(), (self.dest_host, self.dest_port))
-
-                        # receive data from client (data, addr)
-                        reply, addr = self.socket.recvfrom(1024)
-                        # print('Server reply : ' + reply.decode())
-
-                    except socket_error as msg:
-                        print('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
-                        sys.exit()
-                    current_payload = inf.read(MAX_PAYLOAD)
+                except socket_error as msg:
+                    print('Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+                    sys.exit()
+                index += 1
         except KeyboardInterrupt:
             self.socket.close()
             sys.exit()
@@ -84,17 +91,18 @@ class Sender:
         raise NotImplementedError
 
     # Call this function to create packet
-    def make_packet(self, line, is_fin=False):
+    def make_packet(self, data, seq, is_fin=False):
         # transfer in json format
         packet = {
             "FIN": int(is_fin),
-            "ACK": 1,
-            "acknowledge_number": self.ack,
-            "data": line,
-            "internet_checksum": self.get_checksum(line)
+            "sequence_number": seq,
+            "data": data,
+            "internet_checksum": self.get_checksum(data)
         }
 
         packet = json.dumps(packet)
+        print("~~~~~~~~~~~")
+        print(packet)
         return packet
         # raise NotImplementedError
 
