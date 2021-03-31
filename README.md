@@ -8,10 +8,19 @@
 - Run the proxy server for both sender and receiver using [NEWUDPL](http://www.cs.columbia.edu/~hgs/research/projects/newudpl/newudpl-1.4/newudpl.html)
 - Run receiver.py and then sender.py
 
+# Architecture
+![architecture](images/architecture.png)
+
 # Course Website Instructions
 ![1](images/1.png)
 ![2](images/2.png)
 ![3](images/3.png)
+
+The original description [pdf](Programming_Assignment_3_%20Implementing_a_Reliable_Transport_Protocol.pdf)
+
+# My test description
+My test description is in the [assignment write-up](COMS4119_Assignment4_Programming.pdf)
+
 # Some useful commands
 
 ## Direct connection
