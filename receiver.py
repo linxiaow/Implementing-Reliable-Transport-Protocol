@@ -45,16 +45,6 @@ class Receiver:
 
         try:
             while True:
-                # while True:
-                #     is_received = self.inbound()
-                #     if is_received:
-                #         break
-                #
-                # while True:
-                #     is_sent = self.outbound(self.make_packet())
-                #     if is_sent:
-                #         self.ack = 1 - self.ack  # alternating bit
-                #         break
 
                 # for receiver, it will send packets no matter in what situation
                 no_error = self.inbound()  # data will be delivered if no pronblem
