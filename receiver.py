@@ -2,9 +2,8 @@ import json
 from socket import socket, AF_INET, SOCK_DGRAM, error as socket_error
 import argparse
 import sys
-from utils import MAX_PAYLOAD
+from utils import MAX_PAYLOAD, OUTPUT_FILE
 from utils import checksum, not_corrupted
-
 
 class Receiver:
     # TODO: Place States
@@ -26,6 +25,7 @@ class Receiver:
         self.ack = 0
         self.recv_seq = 0
         self.FIN = 0  # check if the end of the packet
+        self.output_file = open(OUTPUT_FILE, mode='w')
         # raise NotImplementedError
 
     # Run a while loop that will change status depending on FIN flag
@@ -64,6 +64,7 @@ class Receiver:
 
                 if self.FIN == 1:
                     print("*** FIN received, closing the server......")
+                    self.output_file.close()
                     raise KeyboardInterrupt
             # raise NotImplementedError
         except KeyboardInterrupt:
@@ -96,7 +97,9 @@ class Receiver:
             index = load_json["index"]
             print("[INFO]: Packet index at", index)
             if seq == self.ack:
-                print(load_json["data"])  # deliver data
+                data = load_json["data"]
+                print(data)
+                self.deliver_data(data)  # deliver data
                 if load_json["FIN"] == 1:
                     self.FIN = 1
                 return True
@@ -122,6 +125,9 @@ class Receiver:
     def get_checksum(self, packet):
         internet_checksum = checksum(packet)
         return internet_checksum
+
+    def deliver_data(self, data):
+        self.output_file.write(data)
 
 
 # Main method to read command line arguments

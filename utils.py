@@ -6,6 +6,7 @@ import json
 
 # constants
 MAX_PAYLOAD = 1024
+OUTPUT_FILE = "output.txt"
 
 # Helper functions
 def checksum(data):
