@@ -92,6 +92,11 @@ Now the receiver argument is
 python3 receiver.py --host localhost --port 5000 --dest_host localhost --dest_port 5001
 ```
 
+do diff check
+```shell script
+diff sample.txt output.txt
+```
+
 ### The following is Loss packet test from sender
 connect to outbound of receiver
 ```shell script
@@ -111,6 +116,10 @@ python3 sender.py --host localhost --port 5003 --dest_host localhost --dest_port
 Now the receiver argument is 
 ```shell script
 python3 receiver.py --host localhost --port 5000 --dest_host localhost --dest_port 5001
+```
+do diff check
+```shell script
+diff sample.txt output.txt
 ```
 
 ### The following is bit error test from sender
@@ -135,6 +144,11 @@ Now the receiver argument is
 python3 receiver.py --host localhost --port 5000 --dest_host localhost --dest_port 5001
 ```
 
+do diff check
+```shell script
+diff sample.txt output.txt
+```
+
 ### The following is bit error test from receiver
 connect to outbound of receiver
 ```shell script
@@ -156,6 +170,11 @@ Now the receiver argument is
 python3 receiver.py --host localhost --port 5000 --dest_host localhost --dest_port 5001 > output.txt
 ```
 
+do diff check
+```shell script
+diff sample.txt output.txt
+```
+
 ### The following is packet loss from receiver
 connect to outbound of receiver
 ```shell script
@@ -175,6 +194,11 @@ python3 sender.py --host localhost --port 5003 --dest_host localhost --dest_port
 Now the receiver argument is 
 ```shell script
 python3 receiver.py --host localhost --port 5000 --dest_host localhost --dest_port 5001
+```
+
+do diff check
+```shell script
+diff sample.txt output.txt
 ```
 
 
